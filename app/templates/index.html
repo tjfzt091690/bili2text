@@ -1,157 +1,322 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bili2Text - Bilibili 视频转文本</title>
+    <title>Bili2Text - Bilibili Video to Text Pipeline</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/">Bili2Text</a>
-            <span class="navbar-text text-muted">Bilibili Video to Text Tool</span>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3 shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-camera-video"></i> Bili2Text
+            </a>
+            <span class="navbar-text text-muted d-none d-sm-inline">Bilibili Video to Text Pipeline</span>
         </div>
     </nav>
 
-    <div class="container">
-        <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="download-tab" data-bs-toggle="tab"
-                        data-bs-target="#download-panel" type="button" role="tab">Download Video</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="audio-tab" data-bs-toggle="tab"
-                        data-bs-target="#audio-panel" type="button" role="tab">Split Audio</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="stt-tab" data-bs-toggle="tab"
-                        data-bs-target="#stt-panel" type="button" role="tab">Speech to Text</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="output-tab" data-bs-toggle="tab"
-                        data-bs-target="#output-panel" type="button" role="tab">View Results</button>
-            </li>
-        </ul>
+    <div class="container-fluid px-4">
+        <!-- Pipeline Progress Bar -->
+        <div class="pipeline-nav mb-4">
+            <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
+                <button class="btn btn-pipeline active" id="nav-step-1" onclick="switchStep(1)">
+                    <i class="bi bi-download"></i> Download
+                </button>
+                <i class="bi bi-arrow-right text-muted"></i>
+                <button class="btn btn-pipeline" id="nav-step-2" onclick="switchStep(2)">
+                    <i class="bi bi-music-note-beamed"></i> Audio Split
+                </button>
+                <i class="bi bi-arrow-right text-muted"></i>
+                <button class="btn btn-pipeline" id="nav-step-3" onclick="switchStep(3)">
+                    <i class="bi bi-mic"></i> STT
+                </button>
+                <i class="bi bi-arrow-right text-muted"></i>
+                <button class="btn btn-pipeline" id="nav-step-4" onclick="switchStep(4)">
+                    <i class="bi bi-robot"></i> LLM Process
+                </button>
+            </div>
+        </div>
 
-        <div class="tab-content">
-            <!-- Download Panel -->
-            <div class="tab-pane fade show active" id="download-panel" role="tabpanel">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        Download from Bilibili
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="videoUrl" class="form-label">Video URL or BV Number</label>
-                            <input type="text" class="form-control" id="videoUrl"
+        <!-- Step 1: Download -->
+        <div class="step-panel" id="step-1">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-download me-2"></i>Step 1: Download from Bilibili</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Video URL or BV Number</label>
+                            <input type="text" class="form-control form-control-lg" id="videoUrl"
                                    placeholder="https://www.bilibili.com/video/BVxxxxxxxxx or BVxxxxxxxxx">
+                            <div class="form-text">Supports single URL, one at a time</div>
                         </div>
-                        <button class="btn btn-primary btn-lg w-100" onclick="startDownload()">
-                            Start Download
-                        </button>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button class="btn btn-primary btn-lg w-100" onclick="startDownload()">
+                                <i class="bi bi-cloud-download me-1"></i> Start Download
+                            </button>
+                        </div>
+                    </div>
 
-                        <div class="progress-container mt-3" id="downloadProgress">
-                            <div class="alert alert-info d-flex align-items-center">
-                                <strong>Status:</strong>
-                                <span class="ms-2 status-badge status-pending" id="dlStatus">Pending</span>
-                                <span class="ms-auto" id="dlProgressText"></span>
-                            </div>
-                            <div class="log-area" id="dlLog"></div>
+                    <div class="progress-container mt-3" id="downloadProgress">
+                        <div class="alert alert-light border d-flex align-items-center">
+                            <strong>Status:</strong>
+                            <span class="ms-2 status-badge status-pending" id="dlStatus">Pending</span>
+                            <span class="ms-auto" id="dlProgressText"></span>
                         </div>
+                        <pre class="log-area" id="dlLog"></pre>
                     </div>
                 </div>
             </div>
 
-            <!-- Audio Split Panel -->
-            <div class="tab-pane fade" id="audio-panel" role="tabpanel">
-                <div class="card">
-                    <div class="card-header bg-success text-white">
-                        Select Video Directory for Audio Extraction
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-folder2-open me-2"></i>Downloaded Videos</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadVideoDirs()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0" id="videoTable">
+                            <thead class="table-light"><tr>
+                                <th>BV Number</th>
+                                <th>Video File</th>
+                                <th>Size (MB)</th>
+                                <th>Action</th>
+                            </tr></thead>
+                            <tbody id="videoTableBody"><tr><td colspan="4" class="text-center text-muted py-4">Loading...</td></tr></tbody>
+                        </table>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Downloaded Video Directories</label>
-                            <select class="form-select" id="videoDirSelect">
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Audio Split -->
+        <div class="step-panel d-none" id="step-2">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-music-note-beamed me-2"></i>Step 2: Extract & Split Audio</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Select Video Directory</label>
+                            <select class="form-select form-select-lg" id="videoDirSelect">
                                 <option value="">Loading...</option>
                             </select>
                         </div>
-                        <button class="btn btn-success btn-lg w-100" onclick="startAudioSplit()">
-                            Start Audio Split
-                        </button>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Slice Length (seconds)</label>
+                            <input type="number" class="form-control" id="sliceLengthInput" value="45" min="10" max="300">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-success btn-lg w-100" onclick="startAudioSplit()">
+                                <i class="bi bi-scissors me-1"></i> Split Audio
+                            </button>
+                        </div>
+                    </div>
 
-                        <div class="progress-container mt-3" id="audioProgress">
-                            <div class="alert alert-info d-flex align-items-center">
-                                <strong>Status:</strong>
-                                <span class="ms-2 status-badge status-pending" id="auStatus">Pending</span>
-                                <span class="ms-auto" id="auProgressText"></span>
+                    <div class="progress-container mt-3" id="audioProgress">
+                        <div class="alert alert-light border d-flex align-items-center">
+                            <strong>Status:</strong>
+                            <span class="ms-2 status-badge status-pending" id="auStatus">Pending</span>
+                            <span class="ms-auto" id="auProgressText"></span>
+                        </div>
+                        <pre class="log-area" id="auLog"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-collection me-2"></i>Sliced Audio Folders</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadSliceDirs()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead class="table-light"><tr>
+                                <th>Folder Name</th>
+                                <th>Slice Count</th>
+                                <th>Created Time</th>
+                                <th>Action</th>
+                            </tr></thead>
+                            <tbody id="sliceTableBody"><tr><td colspan="4" class="text-center text-muted py-4">No sliced audio yet</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: STT -->
+        <div class="step-panel d-none" id="step-3">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-mic me-2"></i>Step 3: Speech to Text</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Select Slice Folder</label>
+                            <select class="form-select form-select-lg" id="sliceDirSelect">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">STT Engine</label>
+                            <select class="form-select" id="engineSelect">
+                                <option value="whisper">Whisper (OpenAI)</option>
+                                <option value="paraformer" disabled>Paraformer (ModelScope) - Coming Soon</option>
+                                <option value="xunfei" disabled>Xunfei ASR - Need API Key</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Model Size</label>
+                            <select class="form-select" id="modelSelect">
+                                <option value="tiny">tiny (fastest)</option>
+                                <option value="base">base</option>
+                                <option value="small">small</option>
+                                <option value="medium">medium</option>
+                                <option value="large">large (best)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Prompt</label>
+                            <input type="text" class="form-control" id="promptInput" placeholder="Loading config...">
+                        </div>
+                    </div>
+                    <button class="btn btn-warning btn-lg w-100 mb-3" onclick="startTranscribe()">
+                        <i class="bi bi-chat-dots me-1"></i> Start Transcription
+                    </button>
+
+                    <div class="progress-container" id="sttProgress">
+                        <div class="alert alert-light border d-flex align-items-center">
+                            <strong>Status:</strong>
+                            <span class="ms-2 status-badge status-pending" id="stStatus">Pending</span>
+                            <span class="ms-auto" id="stProgressText"></span>
+                            <div class="progress ms-3" style="width:200px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" id="stProgressBar" style="width:0%"></div>
                             </div>
-                            <div class="log-area" id="auLog"></div>
+                        </div>
+                        <pre class="log-area" id="stLog"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: LLM Process -->
+        <div class="step-panel d-none" id="step-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-robot me-2"></i>Step 4: LLM Text Processing</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Select Transcribed File</label>
+                            <select class="form-select form-select-lg" id="outputFileSelect" onchange="loadOutputContent()">
+                                <option value="">Loading...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">LLM Action</label>
+                            <select class="form-select" id="llmActionSelect">
+                                <option value="summarize"><i class="bi bi-file-text me-1"></i> Summarize</option>
+                                <option value="correct"><i class="bi bi-check-circle me-1"></i> Correct & Polish</option>
+                                <option value="translate"><i class="bi bi-translate me-1"></i> Translate</option>
+                                <option value="custom"><i class="bi bi-gear me-1"></i> Custom Prompt</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2" id="targetLangGroup" style="display:none">
+                            <label class="form-label fw-semibold">Target Language</label>
+                            <select class="form-select" id="targetLangSelect">
+                                <option value="English">English</option>
+                                <option value="Japanese">Japanese</option>
+                                <option value="Korean">Korean</option>
+                                <option value="French">French</option>
+                                <option value="German">German</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3" id="customPromptGroup" style="display:none">
+                            <label class="form-label fw-semibold">Custom Prompt</label>
+                            <input type="text" class="form-control" id="customPromptInput"
+                                   placeholder="Enter your custom instruction...">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-info text-white btn-lg w-100" onclick="startLLMProcess()">
+                                <i class="bi bi-cpu me-1"></i> Process with LLM
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="progress-container mt-3" id="llmProgress">
+                        <div class="alert alert-light border d-flex align-items-center">
+                            <strong>Status:</strong>
+                            <span class="ms-2 status-badge status-pending" id="llmStatus">Pending</span>
+                            <span class="ms-auto" id="llmProgressText"></span>
+                        </div>
+                        <pre class="log-area" id="llmLog"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mt-3">
+                <!-- Original Text Preview -->
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-file-earmark-text me-2"></i>Original Text</span>
+                            <span class="badge bg-secondary" id="origInfo"></span>
+                        </div>
+                        <div class="card-body p-0">
+                            <pre class="text-preview" id="originalTextPreview">Select a file to preview</pre>
+                        </div>
+                    </div>
+                </div>
+                <!-- LLM Result Preview -->
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-magic me-2"></i>LLM Result</span>
+                            <span class="badge bg-secondary" id="resultInfo"></span>
+                        </div>
+                        <div class="card-body p-0">
+                            <pre class="text-preview" id="llmResultPreview">Run LLM processing to see results here</pre>
+                        </div>
+                        <div class="card-footer d-none" id="llmResultFooter">
+                            <a class="btn btn-sm btn-outline-primary" id="downloadLlmResultBtn" href="#">
+                                <i class="bi bi-download"></i> Download Result
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- STT Panel -->
-            <div class="tab-pane fade" id="stt-panel" role="tabpanel">
-                <div class="card">
-                    <div class="card-header bg-warning text-dark">
-                        Speech to Text (Whisper)
-                    </div>
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Select Slice Folder</label>
-                                <select class="form-select" id="sliceDirSelect">
-                                    <option value="">Loading...</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Model</label>
-                                <select class="form-select" id="modelSelect">
-                                    <option value="tiny">tiny (fastest)</option>
-                                    <option value="base">base</option>
-                                    <option value="small">small</option>
-                                    <option value="medium">medium</option>
-                                    <option value="large">large (most accurate)</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Prompt</label>
-                                <input type="text" class="form-control" id="promptInput"
-                                       placeholder="Loading config...">
-                            </div>
-                        </div>
-                        <button class="btn btn-warning btn-lg w-100" onclick="startTranscribe()">
-                            Start Transcription
-                        </button>
-
-                        <div class="progress-container mt-3" id="sttProgress">
-                            <div class="alert alert-info d-flex align-items-center">
-                                <strong>Status:</strong>
-                                <span class="ms-2 status-badge status-pending" id="stStatus">Pending</span>
-                                <span class="ms-auto" id="stProgressText"></span>
-                            </div>
-                            <div class="log-area" id="stLog"></div>
-                        </div>
-                    </div>
+            <!-- Output Files List -->
+            <div class="card mt-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-files me-2"></i>All Output Files</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadOutputs()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
                 </div>
-            </div>
-
-            <!-- Output Panel -->
-            <div class="tab-pane fade" id="output-panel" role="tabpanel">
-                <div class="card">
-                    <div class="card-header bg-secondary text-white">
-                        Transcription Results
-                    </div>
-                    <div class="card-body">
-                        <button class="btn btn-outline-secondary mb-3" onclick="loadOutputs()">
-                            Refresh List
-                        </button>
-                        <div id="outputList">
-                            <p class="text-muted">Click refresh to load results...</p>
-                        </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead class="table-light"><tr>
+                                <th>File Name</th>
+                                <th>Size (KB)</th>
+                                <th>Type</th>
+                                <th>Action</th>
+                            </tr></thead>
+                            <tbody id="outputTableBody"><tr><td colspan="4" class="text-center text-muted py-4">No output files yet</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
             </div>

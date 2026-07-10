@@ -81,6 +81,21 @@ class Config:
     if XUNFEI_POLL_INTERVAL == 0:
         raise EnvironmentError("XUNFEI_POLL_INTERVAL is not set in .env")
 
+    LLM_PROVIDER = os.getenv("LLM_PROVIDER")
+    if not LLM_PROVIDER:
+        raise EnvironmentError("LLM_PROVIDER is not set in .env")
+    LLM_API_KEY = os.getenv("LLM_API_KEY", "")
+    LLM_API_BASE = os.getenv("LLM_API_BASE")
+    if not LLM_API_BASE:
+        raise EnvironmentError("LLM_API_BASE is not set in .env")
+    LLM_MODEL = os.getenv("LLM_MODEL")
+    if not LLM_MODEL:
+        raise EnvironmentError("LLM_MODEL is not set in .env")
+    LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "0"))
+    if LLM_MAX_TOKENS == 0:
+        raise EnvironmentError("LLM_MAX_TOKENS is not set in .env")
+    LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0"))
+
     FLASK_HOST = os.getenv("FLASK_HOST")
     if not FLASK_HOST:
         raise EnvironmentError("FLASK_HOST is not set in .env")

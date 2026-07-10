@@ -1,9 +1,8 @@
-﻿flask>=3.0.0
+flask>=3.0.0
 sqlalchemy>=2.0.0
 psycopg2-binary>=2.9.0
 pandas>=2.0.0
 you-get>=0.4.0
-moviepy>=1.0.3
 pydub>=0.25.1
 ffmpeg-python>=0.2.0
 openai-whisper>=20230314
@@ -11,3 +10,4 @@ bilibili-api-python>=16.0.0
 requests>=2.28.0
 modelscope>=1.9.0
 python-dotenv>=1.0.0
+openai>=1.0.0
