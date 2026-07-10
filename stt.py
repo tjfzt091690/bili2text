@@ -1,10 +1,40 @@
-from modelscope.pipelines import pipeline
+﻿from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
+from typing import Optional
 
-inference_pipeline = pipeline(
-    task=Tasks.auto_speech_recognition,
-    model='iic/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch',
-    model_revision="v2.0.4")
+from config import config
+from logger import logger
 
-rec_result = inference_pipeline('./bilibili_video/BV1g8PfzkELG/【3月10日午】特朗普：对伊朗军事行动很快结束；伊朗摧毁以色列关键卫星中心，宣布打击美军乌代里直升机基地；俄罗斯文化大楼被以军摧毁；马克龙登上戴高乐航母.wav')
-print(rec_result)
+
+class ParaformerSTT:
+    def __init__(self):
+        self._pipeline = None
+
+    def load_model(self) -> None:
+        if self._pipeline is not None:
+            logger.info("Paraformer model already loaded")
+            return
+        logger.info("Loading Paraformer model ...")
+        self._pipeline = pipeline(
+            task=Tasks.auto_speech_recognition,
+            model="iic/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch",
+            model_revision="v2.0.4",
+        )
+        logger.info("Paraformer model loaded")
+
+    def transcribe(self, wav_path: str) -> dict:
+        self.load_model()
+        logger.info("Transcribing: %s", wav_path)
+        result = self._pipeline(wav_path)
+        logger.info("Transcription complete")
+        return result
+
+
+paraformer_stt = ParaformerSTT()
+
+
+if __name__ == "__main__":
+    result = paraformer_stt.transcribe(
+        "./bilibili_video/BV1g8PfzkELG/test.wav"
+    )
+    print(result)

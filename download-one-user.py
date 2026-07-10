@@ -1,15 +1,16 @@
-import asyncio
+﻿import asyncio
 from bilibili_api import video
 
+from logger import logger
 
-async def main() -> None:
-    # 实例化 Video 类
-    v = video.Video(bvid="BV1uv411q7Mv")
-    # 获取信息
+
+async def get_video_info(bvid: str) -> dict:
+    v = video.Video(bvid=bvid)
     info = await v.get_info()
-    # 打印信息
-    print(info)
+    logger.info("Video info retrieved for %s", bvid)
+    return info
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    info = asyncio.run(get_video_info("BV1uv411q7Mv"))
+    print(info)

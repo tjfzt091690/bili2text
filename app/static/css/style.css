@@ -1,0 +1,13 @@
+﻿body { background-color: #f8f9fa; }
+.card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,.1); margin-bottom: 1.5rem; }
+.card-header { font-weight: 600; }
+.progress-container { display: none; margin-top: 10px; }
+.log-area { max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 13px; background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 6px; }
+.btn-primary { background-color: #00a1d6; border-color: #00a1d6; }
+.btn-primary:hover { background-color: #0091c7; border-color: #0091c7; }
+.status-badge { padding: 4px 8px; border-radius: 12px; font-size: 13px; }
+.status-pending { background-color: #ffc107; color: #000; }
+.status-running { background-color: #0dcaf0; color: #fff; }
+.status-done { background-color: #198754; color: #fff; }
+.status-error { background-color: #dc3545; color: #fff; }
+.nav-tabs .nav-link.active { background-color: #00a1d6; color: white; border-color: #00a1d6; }

@@ -1,66 +1,99 @@
-from moviepy.editor import VideoFileClip
-from pydub import AudioSegment
-import os
-import time
+﻿import os
 import subprocess
+import time
+from typing import Optional
 
-def check_video_integrity(file_path):
-    """使用 FFmpeg 验证视频文件完整性"""
+from config import config
+from logger import logger
+
+
+def check_video_integrity(file_path: str) -> bool:
     result = subprocess.run(
-        ['ffmpeg', '-v', 'error', '-i', file_path, '-f', 'null', '-'],
+        ["ffmpeg", "-v", "error", "-i", file_path, "-f", "null", "-"],
         stderr=subprocess.PIPE,
-        text=True
+        text=True,
     )
     if result.stderr:
-        print(f"视频文件可能损坏: {file_path}")
-        print(f"FFmpeg 错误信息: {result.stderr}")
+        logger.warning("Video file may be corrupted: %s", file_path)
+        logger.warning("FFmpeg error: %s", result.stderr)
         return False
     return True
 
-def convert_flv_to_mp3(name, target_name=None, folder='bilibili_video'):
-    # 先尝试直接拼接 .mp4
-    input_path = f'{folder}/{name}.mp4'
+
+def convert_video_to_mp3(
+    name: str,
+    target_name: Optional[str] = None,
+    folder: Optional[str] = None,
+) -> str:
+    if folder is None:
+        folder = config.VIDEO_BASE_DIR
+    input_path = os.path.join(folder, f"{name}.mp4")
     if not os.path.exists(input_path):
-        # 如果不存在，尝试在文件夹下查找视频文件
-        dir_path = f'{folder}/{name}'
+        dir_path = os.path.join(folder, name)
         if os.path.isdir(dir_path):
             for file in os.listdir(dir_path):
-                if file.endswith(('.mp4', '.flv', '.mkv', '.avi')):
+                if file.endswith((".mp4", ".flv", ".mkv", ".avi")):
                     input_path = os.path.join(dir_path, file)
                     break
             else:
-                raise FileNotFoundError(f"目录下未找到视频文件: {dir_path}")
+                raise FileNotFoundError(f"No video file found in: {dir_path}")
         else:
-            raise FileNotFoundError(f"视频文件不存在: {input_path}")
+            raise FileNotFoundError(f"Video file not found: {input_path}")
     if not check_video_integrity(input_path):
-        raise ValueError(f"视频文件损坏: {input_path}")
-    # 提取视频中的音频并保存为 MP3 到 audio/conv 目录
-    clip = VideoFileClip(input_path)
-    audio = clip.audio
-    os.makedirs("audio/conv", exist_ok=True)
-    output_name = target_name if target_name else name
-    audio.write_audiofile(f"audio/conv/{output_name}.mp3")
+        raise ValueError(f"Video file corrupted: {input_path}")
 
-def split_mp3(filename, folder_name, slice_length=45000, target_folder="audio/slice"):
+    import ffmpeg
+
+    output_name = target_name if target_name else name
+    os.makedirs(config.AUDIO_CONV_DIR, exist_ok=True)
+    output_path = os.path.join(config.AUDIO_CONV_DIR, f"{output_name}.mp3")
+
+    try:
+        (
+            ffmpeg.input(input_path)
+            .output(output_path, format="mp3", acodec="libmp3lame")
+            .overwrite_output()
+            .run(quiet=True)
+        )
+        logger.info("Audio extracted to: %s", output_path)
+    except Exception as e:
+        logger.error("Failed to extract audio: %s", str(e))
+        raise
+
+    return output_path
+
+
+def split_mp3(
+    filename: str,
+    folder_name: str,
+    slice_length: Optional[int] = None,
+    target_folder: Optional[str] = None,
+) -> str:
+    from pydub import AudioSegment
+
+    if slice_length is None:
+        slice_length = config.SLICE_LENGTH_MS
+    if target_folder is None:
+        target_folder = config.AUDIO_SLICE_DIR
+
     audio = AudioSegment.from_mp3(filename)
-    total_slices = (len(audio)+ slice_length - 1) // slice_length
+    total_slices = (len(audio) + slice_length - 1) // slice_length
     target_dir = os.path.join(target_folder, folder_name)
     os.makedirs(target_dir, exist_ok=True)
     for i in range(total_slices):
         start = i * slice_length
         end = start + slice_length
         slice_audio = audio[start:end]
-        slice_path = os.path.join(target_dir, f"{i+1}.mp3")
+        slice_path = os.path.join(target_dir, f"{i + 1}.mp3")
         slice_audio.export(slice_path, format="mp3")
-        print(f"Slice {i+1} saved: {slice_path}")
+        logger.info("Slice %d/%d saved: %s", i + 1, total_slices, slice_path)
+    return target_dir
 
-def process_audio_split(name):
-    # 生成唯一文件夹名，并依次调用转换和分割函数
-    folder_name = time.strftime('%Y%m%d%H%M%S')
-    convert_flv_to_mp3(name, target_name=folder_name)
-    conv_path = f"audio/conv/{folder_name}.mp3"
+
+def process_audio_split(name: str) -> str:
+    folder_name = time.strftime("%Y%m%d%H%M%S")
+    conv_path = convert_video_to_mp3(name, target_name=folder_name)
     if not os.path.exists(conv_path):
-        raise FileNotFoundError(f"转换后的音频文件不存在: {conv_path}")
+        raise FileNotFoundError(f"Converted audio not found: {conv_path}")
     split_mp3(conv_path, folder_name)
     return folder_name
-

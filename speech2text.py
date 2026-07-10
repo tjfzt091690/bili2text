@@ -1,42 +1,80 @@
+﻿import os
+from typing import Optional, Callable
+
 import whisper
-import os
 
-whisper_model = None
+from config import config
+from logger import logger
 
-def is_cuda_available():
-    return whisper.torch.cuda.is_available()
 
-def load_whisper(model="tiny"):
-    global whisper_model
-    whisper_model = whisper.load_model(model, device="cuda" if is_cuda_available() else "cpu")
-    print("Whisper模型："+model)
+class WhisperSTT:
+    def __init__(self):
+        self._model = None
+        self._model_name = None
 
-def run_analysis(filename, model="tiny", prompt="以下是普通话的句子。"):
-    global whisper_model
-    print("正在加载Whisper模型...")
-    # 读取列表中的音频文件
-    audio_list = os.listdir(f"audio/slice/{filename}")
-    print("加载Whisper模型成功！")
-    # 添加排序逻辑
-    audio_files = sorted(
-        audio_list,
-        key=lambda x: int(os.path.splitext(x)[0])  # 按文件名数字排序
-    )
-    # 创建outputs文件夹
-    os.makedirs("outputs", exist_ok=True)
-    print("正在转换文本...")
+    def is_cuda_available(self) -> bool:
+        try:
+            return whisper.torch.cuda.is_available()
+        except Exception:
+            return False
 
-    audio_list.sort(key=lambda x: int(x.split(".")[0])) # 将 audio_list 按照切片序号排序
+    def load_model(self, model_name: Optional[str] = None) -> None:
+        if model_name is None:
+            model_name = config.WHISPER_MODEL
+        if self._model is not None and self._model_name == model_name:
+            logger.info("Whisper model %s already loaded", model_name)
+            return
+        device = "cuda" if self.is_cuda_available() else "cpu"
+        logger.info("Loading Whisper model %s on %s ...", model_name, device)
+        self._model = whisper.load_model(model_name, device=device)
+        self._model_name = model_name
+        logger.info("Whisper model %s loaded", model_name)
 
-    i = 1
-    for fn in audio_files:
-        print(f"正在转换第{i}/{len(audio_files)}个音频... {fn}")
-        # 识别音频
-        result = whisper_model.transcribe(f"audio/slice/{filename}/{fn}", initial_prompt=prompt)
-        print("".join([i["text"] for i in result["segments"] if i is not None]))
+    def run_analysis(
+        self,
+        filename: str,
+        model: str = "tiny",
+        prompt: str = "以下是普通话的句子。",
+        progress_callback: Optional[Callable] = None,
+    ) -> str:
+        self.load_model(model)
+        slice_dir = os.path.join(config.AUDIO_SLICE_DIR, filename)
+        if not os.path.isdir(slice_dir):
+            raise FileNotFoundError(f"Slice directory not found: {slice_dir}")
 
-        with open(f"outputs/{filename}.txt", "a", encoding="utf-8") as f:
-            f.write("".join([i["text"] for i in result["segments"] if i is not None]))
-            f.write("\n")
-        i += 1
-    
+        audio_files = sorted(
+            os.listdir(slice_dir),
+            key=lambda x: int(os.path.splitext(x)[0]),
+        )
+        os.makedirs(config.OUTPUT_DIR, exist_ok=True)
+        output_path = os.path.join(config.OUTPUT_DIR, f"{filename}.txt")
+        logger.info("Starting transcription, %d slices total", len(audio_files))
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            for idx, fn in enumerate(audio_files, 1):
+                logger.info("Transcribing %d/%d: %s", idx, len(audio_files), fn)
+                result = self._model.transcribe(
+                    os.path.join(slice_dir, fn),
+                    initial_prompt=prompt,
+                )
+                text = "".join(
+                    seg["text"] for seg in result["segments"] if seg is not None
+                )
+                f.write(text)
+                f.write("\n")
+                if progress_callback:
+                    progress_callback(idx, len(audio_files), text)
+
+        logger.info("Transcription complete: %s", output_path)
+        return output_path
+
+
+whisper_stt = WhisperSTT()
+
+
+def load_whisper(model: str = "tiny"):
+    whisper_stt.load_model(model)
+
+
+def run_analysis(filename: str, model: str = "tiny", prompt: str = "以下是普通话的句子。"):
+    return whisper_stt.run_analysis(filename, model, prompt)
