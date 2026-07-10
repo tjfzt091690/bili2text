@@ -1,4 +1,4 @@
-﻿from modelscope.pipelines import pipeline
+from modelscope.pipelines import pipeline
 from modelscope.utils.constant import Tasks
 from typing import Optional
 
@@ -9,16 +9,18 @@ from logger import logger
 class ParaformerSTT:
     def __init__(self):
         self._pipeline = None
+        self._model_name = config.PARAFORMER_MODEL
+        self._model_revision = config.PARAFORMER_MODEL_REVISION
 
     def load_model(self) -> None:
         if self._pipeline is not None:
             logger.info("Paraformer model already loaded")
             return
-        logger.info("Loading Paraformer model ...")
+        logger.info("Loading Paraformer model %s ...", self._model_name)
         self._pipeline = pipeline(
             task=Tasks.auto_speech_recognition,
-            model="iic/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch",
-            model_revision="v2.0.4",
+            model=self._model_name,
+            model_revision=self._model_revision,
         )
         logger.info("Paraformer model loaded")
 

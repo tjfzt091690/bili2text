@@ -1,4 +1,4 @@
-﻿import ffmpeg
+import ffmpeg
 import os
 from typing import Optional
 
@@ -9,9 +9,13 @@ from logger import logger
 def mp4_to_wav(
     mp4_path: str,
     wav_path: Optional[str] = None,
-    sample_rate: int = 16000,
-    channels: int = 1,
+    sample_rate: Optional[int] = None,
+    channels: Optional[int] = None,
 ) -> str:
+    if sample_rate is None:
+        sample_rate = config.WAV_SAMPLE_RATE
+    if channels is None:
+        channels = config.WAV_CHANNELS
     if not os.path.exists(mp4_path):
         raise FileNotFoundError(f"MP4 file not found: {mp4_path}")
     if wav_path is None:
@@ -40,5 +44,5 @@ def mp4_to_wav(
 
 
 if __name__ == "__main__":
-    mp4_file = "./bilibili_video/BV1g8PfzkELG/【3月10日午】特朗普：对伊朗军事行动很快结束；伊朗摧毁以色列关键卫星中心，宣布打击美军乌代里直升机基地；俄罗斯文化大楼被以军摧毁；马克龙登上戴高乐航母.mp4"
+    mp4_file = "./bilibili_video/BV1g8PfzkELG/test.mp4"
     mp4_to_wav(mp4_file)

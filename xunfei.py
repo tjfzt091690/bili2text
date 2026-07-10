@@ -1,4 +1,4 @@
-﻿import base64
+import base64
 import hashlib
 import hmac
 import json
@@ -12,7 +12,6 @@ import urllib.parse
 from config import config
 from logger import logger
 
-LFASR_HOST = "https://raasr.xfyun.cn/v2/api"
 API_UPLOAD = "/upload"
 API_GET_RESULT = "/getResult"
 
@@ -21,6 +20,10 @@ class XunfeiASR:
     def __init__(self, appid: Optional[str] = None, secret_key: Optional[str] = None):
         self.appid = appid or config.XUNFEI_APPID
         self.secret_key = secret_key or config.XUNFEI_SECRET_KEY
+        self.lfasr_host = config.XUNFEI_LFASR_HOST
+        self.upload_duration = config.XUNFEI_UPLOAD_DURATION
+        self.result_type = config.XUNFEI_RESULT_TYPE
+        self.poll_interval = config.XUNFEI_POLL_INTERVAL
 
     def _get_signa(self, ts: str) -> str:
         m2 = hashlib.md5()
@@ -44,13 +47,13 @@ class XunfeiASR:
             "ts": ts,
             "fileSize": file_len,
             "fileName": file_name,
-            "duration": "200",
+            "duration": self.upload_duration,
         }
         with open(upload_file_path, "rb") as f:
             data = f.read(file_len)
 
         response = requests.post(
-            url=LFASR_HOST + API_UPLOAD + "?" + urllib.parse.urlencode(param_dict),
+            url=self.lfasr_host + API_UPLOAD + "?" + urllib.parse.urlencode(param_dict),
             headers={"Content-type": "application/json"},
             data=data,
         )
@@ -70,13 +73,13 @@ class XunfeiASR:
             "signa": signa,
             "ts": ts,
             "orderId": order_id,
-            "resultType": "transfer,predict",
+            "resultType": self.result_type,
         }
 
         status = 3
         while status == 3:
             response = requests.post(
-                url=LFASR_HOST + API_GET_RESULT + "?" + urllib.parse.urlencode(param_dict),
+                url=self.lfasr_host + API_GET_RESULT + "?" + urllib.parse.urlencode(param_dict),
                 headers={"Content-type": "application/json"},
             )
             result = json.loads(response.text)
@@ -84,7 +87,7 @@ class XunfeiASR:
             logger.info("Xunfei ASR status: %d", status)
             if status == 4:
                 break
-            time.sleep(5)
+            time.sleep(self.poll_interval)
 
         logger.info("Xunfei ASR result received")
         return result

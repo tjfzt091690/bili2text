@@ -1,4 +1,4 @@
-﻿function pollTask(taskId, statusEl, progressTextEl, logEl, containerEl, onComplete) {
+function pollTask(taskId, statusEl, progressTextEl, logEl, containerEl, onComplete) {
     containerEl.style.display = 'block';
     const interval = setInterval(async () => {
         try {
@@ -137,7 +137,23 @@ async function loadOutputs() {
     container.innerHTML = html;
 }
 
+async function loadConfig() {
+    try {
+        const resp = await fetch('/api/config');
+        const data = await resp.json();
+        if (data.whisper_model) {
+            document.getElementById('modelSelect').value = data.whisper_model;
+        }
+        if (data.whisper_default_prompt) {
+            document.getElementById('promptInput').value = data.whisper_default_prompt;
+        }
+    } catch (e) {
+        // ignore
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     loadVideoDirs();
     loadSliceDirs();
+    loadConfig();
 });

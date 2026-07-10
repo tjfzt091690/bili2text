@@ -1,4 +1,4 @@
-﻿import os
+import os
 import uuid
 import threading
 from typing import Optional
@@ -15,12 +15,12 @@ def create_app() -> Flask:
         template_folder=os.path.join(os.path.dirname(__file__), "templates"),
         static_folder=os.path.join(os.path.dirname(__file__), "static"),
     )
-    app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024
+    app.config["MAX_CONTENT_LENGTH"] = config.FLASK_MAX_CONTENT_LENGTH
 
     task_store = {}
 
-    from utils import download_video, get_bv_from_url_info, ensure_folders_exist
-    from exAudio import process_audio_split, convert_video_to_mp3, split_mp3
+    from utils import download_video, get_bv_from_url_info
+    from exAudio import process_audio_split
     from speech2text import whisper_stt
 
     os.makedirs(config.VIDEO_BASE_DIR, exist_ok=True)
@@ -28,6 +28,14 @@ def create_app() -> Flask:
     @app.route("/")
     def index():
         return render_template("index.html")
+
+    @app.route("/api/config", methods=["GET"])
+    def api_config():
+        return jsonify({
+            "whisper_model": config.WHISPER_MODEL,
+            "whisper_default_prompt": config.WHISPER_DEFAULT_PROMPT,
+            "slice_length_ms": config.SLICE_LENGTH_MS,
+        })
 
     @app.route("/api/download", methods=["POST"])
     def api_download():
@@ -143,8 +151,8 @@ def create_app() -> Flask:
     def api_transcribe():
         data = request.get_json(force=True)
         folder_name = data.get("folder_name", "").strip()
-        model = data.get("model", "tiny")
-        prompt = data.get("prompt", "以下是普通话的句子。")
+        model = data.get("model") or config.WHISPER_MODEL
+        prompt = data.get("prompt") or config.WHISPER_DEFAULT_PROMPT
         if not folder_name:
             return jsonify({"error": "folder_name is required"}), 400
 

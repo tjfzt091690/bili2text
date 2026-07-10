@@ -1,4 +1,4 @@
-﻿import os
+import os
 import subprocess
 import time
 from typing import Optional
@@ -51,7 +51,7 @@ def convert_video_to_mp3(
     try:
         (
             ffmpeg.input(input_path)
-            .output(output_path, format="mp3", acodec="libmp3lame")
+            .output(output_path, format="mp3", acodec=config.AUDIO_CODEC)
             .overwrite_output()
             .run(quiet=True)
         )

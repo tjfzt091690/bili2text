@@ -5,27 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bili2Text - Bilibili 视频转文本</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f8f9fa; }
-        .card { border: none; box-shadow: 0 2px 8px rgba(0,0,0,.1); margin-bottom: 1.5rem; }
-        .card-header { font-weight: 600; }
-        .progress-container { display: none; margin-top: 10px; }
-        .log-area { max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 13px; background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 6px; }
-        .btn-primary { background-color: #00a1d6; border-color: #00a1d6; }
-        .btn-primary:hover { background-color: #0091c7; border-color: #0091c7; }
-        .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 13px; }
-        .status-pending { background-color: #ffc107; color: #000; }
-        .status-running { background-color: #0dcaf0; color: #fff; }
-        .status-done { background-color: #198754; color: #fff; }
-        .status-error { background-color: #dc3545; color: #fff; }
-        .nav-tabs .nav-link.active { background-color: #00a1d6; color: white; border-color: #00a1d6; }
-    </style>
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/">📺 Bili2Text</a>
-            <span class="navbar-text text-muted">Bilibili 视频转文本工具</span>
+            <a class="navbar-brand fw-bold" href="/">Bili2Text</a>
+            <span class="navbar-text text-muted">Bilibili Video to Text Tool</span>
         </div>
     </nav>
 
@@ -33,19 +19,19 @@
         <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="download-tab" data-bs-toggle="tab"
-                        data-bs-target="#download-panel" type="button" role="tab">📥 下载视频</button>
+                        data-bs-target="#download-panel" type="button" role="tab">Download Video</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="audio-tab" data-bs-toggle="tab"
-                        data-bs-target="#audio-panel" type="button" role="tab">🎵 分离语音</button>
+                        data-bs-target="#audio-panel" type="button" role="tab">Split Audio</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="stt-tab" data-bs-toggle="tab"
-                        data-bs-target="#stt-panel" type="button" role="tab">💬 语音转文字</button>
+                        data-bs-target="#stt-panel" type="button" role="tab">Speech to Text</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="output-tab" data-bs-toggle="tab"
-                        data-bs-target="#output-panel" type="button" role="tab">📄 查看结果</button>
+                        data-bs-target="#output-panel" type="button" role="tab">View Results</button>
             </li>
         </ul>
 
@@ -54,22 +40,22 @@
             <div class="tab-pane fade show active" id="download-panel" role="tabpanel">
                 <div class="card">
                     <div class="card-header bg-primary text-white">
-                        📥 从 Bilibili 下载视频
+                        Download from Bilibili
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label for="videoUrl" class="form-label">Bilibili 视频 URL 或 BV 号</label>
+                            <label for="videoUrl" class="form-label">Video URL or BV Number</label>
                             <input type="text" class="form-control" id="videoUrl"
-                                   placeholder="https://www.bilibili.com/video/BVxxxxxxxxx 或 BVxxxxxxxxx">
+                                   placeholder="https://www.bilibili.com/video/BVxxxxxxxxx or BVxxxxxxxxx">
                         </div>
                         <button class="btn btn-primary btn-lg w-100" onclick="startDownload()">
-                            ⬇️ 开始下载
+                            Start Download
                         </button>
 
                         <div class="progress-container mt-3" id="downloadProgress">
                             <div class="alert alert-info d-flex align-items-center">
-                                <strong>任务状态:</strong>
-                                <span class="ms-2 status-badge status-pending" id="dlStatus">等待中</span>
+                                <strong>Status:</strong>
+                                <span class="ms-2 status-badge status-pending" id="dlStatus">Pending</span>
                                 <span class="ms-auto" id="dlProgressText"></span>
                             </div>
                             <div class="log-area" id="dlLog"></div>
@@ -82,23 +68,23 @@
             <div class="tab-pane fade" id="audio-panel" role="tabpanel">
                 <div class="card">
                     <div class="card-header bg-success text-white">
-                        🎵 选择视频目录进行语音分离
+                        Select Video Directory for Audio Extraction
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">已下载的视频目录</label>
+                            <label class="form-label">Downloaded Video Directories</label>
                             <select class="form-select" id="videoDirSelect">
-                                <option value="">加载中...</option>
+                                <option value="">Loading...</option>
                             </select>
                         </div>
                         <button class="btn btn-success btn-lg w-100" onclick="startAudioSplit()">
-                            🔊 开始分离语音
+                            Start Audio Split
                         </button>
 
                         <div class="progress-container mt-3" id="audioProgress">
                             <div class="alert alert-info d-flex align-items-center">
-                                <strong>任务状态:</strong>
-                                <span class="ms-2 status-badge status-pending" id="auStatus">等待中</span>
+                                <strong>Status:</strong>
+                                <span class="ms-2 status-badge status-pending" id="auStatus">Pending</span>
                                 <span class="ms-auto" id="auProgressText"></span>
                             </div>
                             <div class="log-area" id="auLog"></div>
@@ -111,40 +97,40 @@
             <div class="tab-pane fade" id="stt-panel" role="tabpanel">
                 <div class="card">
                     <div class="card-header bg-warning text-dark">
-                        💬 语音转文字 (Whisper)
+                        Speech to Text (Whisper)
                     </div>
                     <div class="card-body">
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label">选择切片文件夹</label>
+                                <label class="form-label">Select Slice Folder</label>
                                 <select class="form-select" id="sliceDirSelect">
-                                    <option value="">加载中...</option>
+                                    <option value="">Loading...</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">模型选择</label>
+                                <label class="form-label">Model</label>
                                 <select class="form-select" id="modelSelect">
-                                    <option value="tiny">tiny (最快)</option>
+                                    <option value="tiny">tiny (fastest)</option>
                                     <option value="base">base</option>
                                     <option value="small">small</option>
                                     <option value="medium">medium</option>
-                                    <option value="large">large (最准)</option>
+                                    <option value="large">large (most accurate)</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Prompt</label>
                                 <input type="text" class="form-control" id="promptInput"
-                                       placeholder="以下是普通话的句子。" value="以下是普通话的句子。">
+                                       placeholder="Loading config...">
                             </div>
                         </div>
                         <button class="btn btn-warning btn-lg w-100" onclick="startTranscribe()">
-                            ✨ 开始转写
+                            Start Transcription
                         </button>
 
                         <div class="progress-container mt-3" id="sttProgress">
                             <div class="alert alert-info d-flex align-items-center">
-                                <strong>任务状态:</strong>
-                                <span class="ms-2 status-badge status-pending" id="stStatus">等待中</span>
+                                <strong>Status:</strong>
+                                <span class="ms-2 status-badge status-pending" id="stStatus">Pending</span>
                                 <span class="ms-auto" id="stProgressText"></span>
                             </div>
                             <div class="log-area" id="stLog"></div>
@@ -157,14 +143,14 @@
             <div class="tab-pane fade" id="output-panel" role="tabpanel">
                 <div class="card">
                     <div class="card-header bg-secondary text-white">
-                        📄 转写结果
+                        Transcription Results
                     </div>
                     <div class="card-body">
                         <button class="btn btn-outline-secondary mb-3" onclick="loadOutputs()">
-                            🔄 刷新列表
+                            Refresh List
                         </button>
                         <div id="outputList">
-                            <p class="text-muted">点击刷新按钮加载结果...</p>
+                            <p class="text-muted">Click refresh to load results...</p>
                         </div>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 from bilibili_api import video
 
 from logger import logger

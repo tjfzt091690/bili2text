@@ -1,4 +1,4 @@
-﻿import os
+import os
 from typing import Optional, Callable
 
 import whisper
@@ -33,10 +33,14 @@ class WhisperSTT:
     def run_analysis(
         self,
         filename: str,
-        model: str = "tiny",
-        prompt: str = "以下是普通话的句子。",
+        model: Optional[str] = None,
+        prompt: Optional[str] = None,
         progress_callback: Optional[Callable] = None,
     ) -> str:
+        if model is None:
+            model = config.WHISPER_MODEL
+        if prompt is None:
+            prompt = config.WHISPER_DEFAULT_PROMPT
         self.load_model(model)
         slice_dir = os.path.join(config.AUDIO_SLICE_DIR, filename)
         if not os.path.isdir(slice_dir):
@@ -72,9 +76,9 @@ class WhisperSTT:
 whisper_stt = WhisperSTT()
 
 
-def load_whisper(model: str = "tiny"):
+def load_whisper(model: Optional[str] = None):
     whisper_stt.load_model(model)
 
 
-def run_analysis(filename: str, model: str = "tiny", prompt: str = "以下是普通话的句子。"):
+def run_analysis(filename: str, model: Optional[str] = None, prompt: Optional[str] = None):
     return whisper_stt.run_analysis(filename, model, prompt)
