@@ -39,5 +39,5 @@ def bv_download(url):
         exists['status'][0] = 2
         exists['video_path'] = filepath
         exists.to_sql('tasks_to_do', conn.engine, if_exists='replace', index=False)
-
-bv_download('https://www.bilibili.com/video/BV1vjCMBdEoj')
+if __name__ == "__main__":
+    bv_download('https://www.bilibili.com/video/BV1vjCMBdEoj')
