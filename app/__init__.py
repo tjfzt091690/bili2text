@@ -19,7 +19,7 @@ def create_app() -> Flask:
 
     task_store = {}
 
-    from utils import download_video, get_bv_from_url_info
+    from utils import download_video, get_bv_from_url_info, is_video_downloaded
     from exAudio import process_audio_split
     from speech2text import whisper_stt
     from llm_service import llm_service
@@ -62,6 +62,18 @@ def create_app() -> Flask:
                 task_store[task_id]["status"] = "running"
                 task_store[task_id]["progress"] = "Resolving BV number..."
                 bv = get_bv_from_url_info(url)
+
+                if is_video_downloaded(bv):
+                    logger.info("Video %s already downloaded, skipping.", bv)
+                    task_store[task_id]["status"] = "done"
+                    task_store[task_id]["result"] = {
+                        "path": os.path.join(config.VIDEO_BASE_DIR, bv),
+                        "bv": bv,
+                        "skipped": True,
+                    }
+                    task_store[task_id]["progress"] = "Already downloaded, skipped"
+                    return
+
                 task_store[task_id]["progress"] = f"Downloading {bv}..."
                 filepath = download_video(bv, url)
                 task_store[task_id]["status"] = "done"

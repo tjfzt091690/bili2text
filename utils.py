@@ -38,9 +38,27 @@ def get_bv_from_url_info(url: str) -> str:
     return last_part[2:]
 
 
+def is_video_downloaded(bv_number: str) -> bool:
+    output_dir = os.path.join(config.VIDEO_BASE_DIR, bv_number)
+    if not os.path.isdir(output_dir):
+        return False
+    video_exts = (".mp4", ".flv", ".mkv", ".avi")
+    for f in os.listdir(output_dir):
+        if f.lower().endswith(video_exts):
+            file_path = os.path.join(output_dir, f)
+            if os.path.isfile(file_path) and os.path.getsize(file_path) > 0:
+                return True
+    return False
+
+
 def download_video(bv_number: str, video_url: str) -> str:
     logger.info("Downloading video %s ...", video_url)
     output_dir = os.path.join(config.VIDEO_BASE_DIR, bv_number)
+
+    if is_video_downloaded(bv_number):
+        logger.info("Video already exists locally, skipping download: %s", output_dir)
+        return output_dir
+
     ensure_folders_exist(output_dir)
     logger.info("Using you-get to download: %s", video_url)
     try:

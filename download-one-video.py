@@ -1,8 +1,11 @@
+import os
+
 import pandas as pd
 from pandas import DataFrame
 from sqlalchemy import text
 
-from utils import get_conn, download_video, get_bv_from_url_info
+from config import config
+from utils import get_conn, download_video, get_bv_from_url_info, is_video_downloaded
 from exAudio import process_audio_split
 from speech2text import whisper_stt
 from logger import logger
@@ -27,6 +30,16 @@ def bv_download(url: str) -> None:
         exists = DataFrame([task_data])
 
     if exists["status"][0] == 0:
+        if is_video_downloaded(av):
+            logger.info("Video already exists locally, skipping download: %s", av)
+            exists["status"][0] = 2
+            exists["video_path"] = os.path.join(config.VIDEO_BASE_DIR, av)
+            exists.to_sql(
+                "tasks_to_do", conn.engine, if_exists="replace", index=False
+            )
+            logger.info("Task completed (already downloaded)")
+            return
+
         exists["status"][0] = 1
         exists.to_sql(
             "tasks_to_do", conn.engine, if_exists="replace", index=False
