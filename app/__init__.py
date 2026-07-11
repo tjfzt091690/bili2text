@@ -19,7 +19,7 @@ def create_app() -> Flask:
 
     task_store = {}
 
-    from utils import download_video, get_bv_from_url_info, is_video_downloaded
+    from utils import download_video, get_bv_from_url_info, is_video_downloaded, wait_before_download
     from exAudio import process_audio_split
     from speech2text import whisper_stt
     from llm_service import llm_service

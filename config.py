@@ -29,6 +29,9 @@ class Config:
     VIDEO_BASE_DIR = os.getenv("VIDEO_BASE_DIR")
     if not VIDEO_BASE_DIR:
         raise EnvironmentError("VIDEO_BASE_DIR is not set in .env")
+
+    DOWNLOAD_INTERVAL_MIN = int(os.getenv("DOWNLOAD_INTERVAL_MIN", "5"))
+    DOWNLOAD_INTERVAL_MAX = int(os.getenv("DOWNLOAD_INTERVAL_MAX", "15"))
     AUDIO_CONV_DIR = os.getenv("AUDIO_CONV_DIR")
     if not AUDIO_CONV_DIR:
         raise EnvironmentError("AUDIO_CONV_DIR is not set in .env")

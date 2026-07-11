@@ -2,6 +2,8 @@ import os
 import re
 import subprocess
 import glob
+import time
+import random
 
 from sqlalchemy import create_engine, text
 
@@ -51,6 +53,16 @@ def is_video_downloaded(bv_number: str) -> bool:
     return False
 
 
+def wait_before_download() -> None:
+    interval_min = config.DOWNLOAD_INTERVAL_MIN
+    interval_max = config.DOWNLOAD_INTERVAL_MAX
+    if interval_min > interval_max:
+        interval_min, interval_max = interval_max, interval_min
+    delay = random.uniform(interval_min, interval_max)
+    logger.info("Download interval: waiting %.1f seconds (range %d~%d)", delay, interval_min, interval_max)
+    time.sleep(delay)
+
+
 def download_video(bv_number: str, video_url: str) -> str:
     logger.info("Downloading video %s ...", video_url)
     output_dir = os.path.join(config.VIDEO_BASE_DIR, bv_number)
@@ -58,6 +70,8 @@ def download_video(bv_number: str, video_url: str) -> str:
     if is_video_downloaded(bv_number):
         logger.info("Video already exists locally, skipping download: %s", output_dir)
         return output_dir
+
+    wait_before_download()
 
     ensure_folders_exist(output_dir)
     logger.info("Using you-get to download: %s", video_url)
